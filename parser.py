@@ -1,9 +1,9 @@
+import re
+
 class XMLParser(object):
 
-	def __init__(self):
-		self.def_dict = {}
-
 	def parse(self,string):
+		self.def_dict = {}
 		string = string[69:]
 		while string:
 			start_index = string.find('<entry ')
@@ -37,16 +37,22 @@ class XMLParser(object):
 			sentance_part_start = string.find('<fl>')
 			sentance_part_end = string.find('</fl>')
 			if sentance_part_start != -1:
-				self.def_dict[current_entry]['sentance_part'] = string[sentance_part_start+4:sentance_part_end]
+				self.def_dict[current_entry]['sentence_part'] = string[sentance_part_start+4:sentance_part_end]
+			else:
+				self.def_dict[current_entry]['sentence_part'] = 'None'
 
 			#<def>
 			def_start = string.find('<def>')
 			def_end = string.find('</def>')
 			def_str = string[def_start+5:def_end]
 			self.handle_def(def_str,current_entry)
+			for key,value in self.def_dict[current_entry].items():
+				if key == 'sn':
+					self.handle_tags(current_entry,value)
 		return
 
 	def handle_def(self,def_tag,current_entry):
+		self.def_dict[current_entry]['sn'] = ''
 		while def_tag:
 			sn_start = def_tag.find('<sn>')
 			sn_end = def_tag.find('</sn>')
@@ -57,6 +63,7 @@ class XMLParser(object):
 				if sn.isdigit():
 					self.handle_sn(def_tag[sn_start:def_tag.find('</dt>')+5],current_entry)
 				else:
+					self.def_dict[current_entry]['sn'] += '{} '.format(self.parent)
 					self.handle_sn(def_tag[sn_start:def_tag.find('</dt>')+5],current_entry,self.parent)
 				sn_end = def_tag.find('</sn>',sn_end)
 				if sn_end != -1:
@@ -64,7 +71,10 @@ class XMLParser(object):
 				else:
 					def_tag = ''
 			else:
-				self.def_dict[current_entry]['sn0'] = def_tag[def_tag.find('<dt>')+4:def_tag.find('</dt>')]
+				to_add = def_tag[def_tag.find('<dt>')+4:def_tag.find('</dt>')]
+				if to_add.startswith(':'):
+					to_add = to_add[1:]
+				self.def_dict[current_entry]['sn'] += '1: ' + to_add
 				def_tag = ''
 
 	def handle_sn(self,sn,current_entry,parent=None):
@@ -72,21 +82,16 @@ class XMLParser(object):
 		if len(key) > 1:
 			key = key[-1]
 		if parent:
-			try:
-				self.def_dict[current_entry]['sn{}'.format(parent)].append((key,sn[sn.find('<dt>')+4:sn.find('</dt>')]))
-			except KeyError:
-				self.def_dict[current_entry]['sn{}'.format(parent)] = [(key,sn[sn.find('<dt>')+4:sn.find('</dt>')])]
+			self.def_dict[current_entry]['sn'] += '{key}){value}\n'.format(key=key,value=sn[sn.find('<dt>')+4:sn.find('</dt>')])
 		else:
-			self.def_dict[current_entry]['sn{}'.format(key)] = sn[sn.find('<dt>')+4:sn.find('</dt>')]
+			to_add = sn[sn.find('<dt>')+4:sn.find('</dt>')]
+			if to_add.startswith(':'):
+				to_add = to_add[1:]
+			self.def_dict[current_entry]['sn'] += '{key}: {value}\n'.format(key=key,value=to_add)
 
-
-
-
-if __name__ =='__main__':
-	parser = XMLParser()
-	file_to_read = open('test.txt')
-	parser.parse(file_to_read.read())
-	for item in  parser.def_dict.items():
-		print item
-		print
-	file_to_read.close()
+	def handle_tags(self,current_entry,string):
+		to_remove = re.findall('</?[a-z]*>',string)
+		while to_remove:
+			string = string[:string.find(to_remove[0])]+string[string.find(to_remove[0])+len(to_remove[0]):]
+			to_remove.pop(0)
+		self.def_dict[current_entry]['sn'] = string

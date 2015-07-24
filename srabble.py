@@ -2,7 +2,7 @@ import timeit
 from collections import OrderedDict
 import requests
 from parser import XMLParser
-
+import excep as ex
 class ScrabbleSolver(object):
 
 	def __init__(self,filename):
@@ -38,6 +38,9 @@ class ScrabbleSolver(object):
 		'''
 		#we lower the letters in the rack so AAA is equal to aaa
 		rack = rack.lower()
+		for letter in rack:
+			if not letter.isalpha() :
+				raise ex.IncorrectRack(rack)
 		#create an empty list to hold the letters that we have already used
 		used_letters = []
 		#create a dictionary to hold the key=words ,value = score
