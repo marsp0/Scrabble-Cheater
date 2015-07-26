@@ -5,11 +5,11 @@ from parser import XMLParser
 import excep as ex
 class ScrabbleSolver(object):
 
-	def __init__(self,filename):
+	def __init__(self,):
 		'''
 		filename - the file that contains the words
 		scores - dictionary containing all the letters and their score '''
-		self.filename = filename
+		self.filename = 'sowpods.txt'
 		self.api_key = '9832fd27-0fe4-4bc6-961a-e2e74b2d9bb9'
 		self.parser = XMLParser()
 		self.scores = {"a": 1, "c": 3, "b": 3, "e": 1, "d": 2, "g": 2,
@@ -38,9 +38,8 @@ class ScrabbleSolver(object):
 		'''
 		#we lower the letters in the rack so AAA is equal to aaa
 		rack = rack.lower()
-		for letter in rack:
-			if not letter.isalpha() :
-				raise ex.IncorrectRack(rack)
+		if rack == '' or any(map(lambda x: x.isdigit(), rack)):
+			raise ex.IncorrectRack(rack)
 		#create an empty list to hold the letters that we have already used
 		used_letters = []
 		#create a dictionary to hold the key=words ,value = score
@@ -154,13 +153,10 @@ class ScrabbleSolver(object):
 		endpoint = 'http://www.dictionaryapi.com/api/v1/references/collegiate/xml/{}?key={}'.format(word,self.api_key)
 		result = requests.get(endpoint)
 		result = result.text.encode('utf-8')
-		result = self.parser.parse(result)
+		try:
+			result = self.parser.parse(result)
+		except ex.NoFreeLunch as e:
+			e.word = word
+			raise e
 		return result
 
-
-if __name__=='__main__':
-	solver = ScrabbleSolver('sowpods.txt')
-	file_to_write = file('test.txt',mode='w')
-	file_to_write.write(solver.get_def('aa'))
-	file_to_write.close()
-	#print solver.get_def('aa').count('<entry ',65)

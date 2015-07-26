@@ -6,3 +6,8 @@ class RackErrors(Exception):
 class IncorrectRack(RackErrors):
 
 	pass
+
+class NoFreeLunch(Exception):
+
+	def __init__(self,word=None):
+		self.word = word

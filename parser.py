@@ -1,10 +1,13 @@
 import re
+import excep as ex
 
 class XMLParser(object):
 
 	def parse(self,string):
 		self.def_dict = {}
 		string = string[69:]
+		if string.startswith('<suggestion>'):
+			raise ex.NoFreeLunch()
 		while string:
 			start_index = string.find('<entry ')
 			end_index = string.find('</entry>')+8
@@ -45,7 +48,10 @@ class XMLParser(object):
 			def_start = string.find('<def>')
 			def_end = string.find('</def>')
 			def_str = string[def_start+5:def_end]
-			self.handle_def(def_str,current_entry)
+			if def_start != -1:
+				self.handle_def(def_str,current_entry)
+			else:
+				self.def_dict[current_entry]['sn'] = string[string.find('<dx>')+4:string.find('<dxt>')]+'"'+string[string.find('<dxt>')+5:string.find('</dxt>')]+'"'
 			for key,value in self.def_dict[current_entry].items():
 				if key == 'sn':
 					self.handle_tags(current_entry,value)
@@ -58,12 +64,12 @@ class XMLParser(object):
 			sn_end = def_tag.find('</sn>')
 			if sn_start != -1:
 				sn = def_tag[sn_start+4:sn_end]
-				if len(sn) > 1:
-					self.parent = sn[0]
+				self.parent = None if len(sn) == 1 else sn[0]
 				if sn.isdigit():
 					self.handle_sn(def_tag[sn_start:def_tag.find('</dt>')+5],current_entry)
-				else:
-					self.def_dict[current_entry]['sn'] += '{} '.format(self.parent)
+				elif sn.isalpha():
+					if self.parent:
+						self.def_dict[current_entry]['sn'] += '{} '.format(self.parent)
 					self.handle_sn(def_tag[sn_start:def_tag.find('</dt>')+5],current_entry,self.parent)
 				sn_end = def_tag.find('</sn>',sn_end)
 				if sn_end != -1:

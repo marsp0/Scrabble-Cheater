@@ -6,11 +6,11 @@ import excep as ex
 
 class Gui(tk.Frame):
 
-	def __init__(self,filename,parent=None,*args,**kwargs):
+	def __init__(self,parent=None,*args,**kwargs):
 
 		tk.Frame.__init__(self,parent,*args,**kwargs)
 
-		self.cheater = ScrabbleSolver(filename)
+		self.cheater = ScrabbleSolver()
 
 		self.master.minsize(width=600,height=400)
 		self.master.maxsize(width=600,height=400)
@@ -59,7 +59,7 @@ class Gui(tk.Frame):
 			self.current_bucket = min(self.results.keys())
 			self.packer(self.results_display,self.update_sumary)
 		except ex.IncorrectRack as e:
-			mb.showwarning('Incorrect Rack', 'The rack you provided contains digits: \n\n%s' % e.rack)
+			mb.showwarning('Incorrect Rack', 'The rack you provided contains digits or is empty: \n\n%s' % e.rack)
 
 		
 
@@ -136,10 +136,15 @@ class Gui(tk.Frame):
 
 	def display_ref(self,word):
 		self.ref_check = True
-		self.ref_dict = self.cheater.get_def(word)
-		self.ordered_keys = self.ref_dict.keys()
-		self.current_key = self.ordered_keys[0]
-		self.packer(self.ref_display,self.update_ref,self.results_display)
+		try:
+			self.ref_dict = self.cheater.get_def(word)
+			print self.ref_dict
+			self.ordered_keys = self.ref_dict.keys()
+			self.current_key = self.ordered_keys[0]
+			self.packer(self.ref_display,self.update_ref,self.results_display)
+		except ex.NoFreeLunch:
+			mb.showwarning('Error','Sorry, the word exists but the free online dictionary has limits, so we couldn\'t fetch the definition')
+		
 
 	def update_ref(self):
 		self.ref_display.pack()
@@ -164,5 +169,5 @@ class Gui(tk.Frame):
 		self.packer(self.ref_display,self.update_sumary)
 
 if __name__=='__main__':
-	p = Gui('sowpods.txt')
+	p = Gui()
 	p.mainloop()
